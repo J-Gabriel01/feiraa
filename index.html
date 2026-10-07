@@ -1,0 +1,1485 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark h-full bg-slate-950 text-slate-100 font-sans">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Seu Salário Aguenta? - O Jogo da Inflação Real</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              400: '#34d399',
+              500: '#10b981',
+              600: '#059669',
+              900: '#064e3b',
+            },
+            danger: {
+              400: '#f87171',
+              500: '#ef4444',
+              600: '#dc2626',
+            }
+          },
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Chart.js para visualização gráfica -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Tone.js para sintetizar efeitos sonoros sem arquivos externos -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+  <!-- Canvas Confetti para comemoração na etapa final -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: radial-gradient(circle at top center, #0f172a 0%, #020617 100%);
+      min-height: 100vh;
+    }
+
+    /* Estilização da barra de rolagem */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #020617; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #334155; }
+
+    /* Efeito de Flip 3D da Carta */
+    .perspective-1000 { perspective: 1000px; }
+    .transform-style-3d { transform-style: preserve-3d; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+    .backface-hidden { backface-visibility: hidden; }
+    .rotate-y-180 { transform: rotateY(180deg); }
+
+    /* Visual Glassmorphism */
+    .glass-card {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 20px 40px -15px rgba(0,0,0,0.5);
+    }
+
+    .glass-card-interactive {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .glass-card-interactive:hover {
+      border-color: rgba(16, 185, 129, 0.4);
+      transform: translateY(-4px) scale(1.01);
+      box-shadow: 0 16px 32px -8px rgba(16, 185, 129, 0.2);
+    }
+
+    .pulse-warning {
+      animation: pulse-border 1.5s infinite;
+    }
+    @keyframes pulse-border {
+      0%, 100% { border-color: rgba(239, 68, 68, 0.4); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+      50% { border-color: rgba(239, 68, 68, 1); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+    }
+
+    .animate-fade-in {
+      animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(16px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .animate-float {
+      animation: float 4s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-6px); }
+    }
+
+    .animate-shake {
+      animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    }
+
+    @keyframes shake {
+      10%, 90% { transform: translate3d(-2px, 0, 0); }
+      20%, 80% { transform: translate3d(4px, 0, 0); }
+      30%, 50%, 70% { transform: translate3d(-6px, 0, 0); }
+      40%, 60% { transform: translate3d(6px, 0, 0); }
+    }
+
+    .animate-glow {
+      animation: glowPulse 2s infinite ease-in-out;
+    }
+
+    @keyframes glowPulse {
+      0%, 100% { box-shadow: 0 0 15px rgba(16, 185, 129, 0.3); }
+      50% { box-shadow: 0 0 30px rgba(16, 185, 129, 0.6); }
+    }
+
+    .animate-pop {
+      animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @keyframes pop {
+      0% { transform: scale(0.8); opacity: 0.5; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+  </style>
+</head>
+<body class="flex flex-col justify-between text-slate-100 antialiased selection:bg-emerald-500 selection:text-slate-950">
+
+  <div id="loading-screen" class="fixed inset-0 z-[100] bg-slate-950 flex flex-col items-center justify-center p-6 text-center transition-opacity duration-700">
+    <div class="max-w-md w-full space-y-6">
+      <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-slate-950 font-black text-3xl mx-auto shadow-2xl shadow-emerald-500/40 animate-bounce">
+        $
+      </div>
+      <div>
+        <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight">Seu Salário Aguenta?</h1>
+        <p id="loading-status-text" class="text-xs text-slate-400 mt-2 h-4 font-medium">Carregando índices de inflação...</p>
+      </div>
+      
+      <!-- BARRA DE PROGRESSO DE 5 SEGUNDOS -->
+      <div class="space-y-2">
+        <div class="w-full bg-slate-900 border border-slate-800 rounded-full h-3.5 p-0.5 shadow-inner overflow-hidden relative">
+          <div id="loading-progress-bar" class="h-full bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-300 rounded-full w-0 transition-all duration-100 ease-linear shadow-lg shadow-emerald-500/50"></div>
+        </div>
+        <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 px-1">
+          <span>Iniciando motor econômico</span>
+          <span id="loading-pct-text" class="text-emerald-400 font-black">0%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <header class="border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      
+      <!-- LOGO -->
+      <div class="flex items-center gap-3 cursor-pointer" onclick="resetToStep(1)">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-slate-950 font-black text-xl shadow-lg shadow-emerald-500/20">
+          $
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-extrabold text-base sm:text-lg text-white tracking-tight">Seu Salário Aguenta?</h1>
+            <span class="px-2 py-0.5 text-[10px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-400 rounded border border-emerald-500/20">Simulador</span>
+          </div>
+          <p class="text-[11px] text-slate-400 font-medium">Inflação e Poder de Compra Real (6 Meses)</p>
+        </div>
+      </div>
+
+      <!-- STATUS DA ETAPA NO HEADER -->
+      <div id="header-tracker" class="hidden md:flex items-center gap-3 text-xs font-semibold">
+        <div class="flex items-center gap-2 bg-slate-900/80 px-3.5 py-1.5 rounded-xl border border-slate-800">
+          <i data-lucide="wallet" class="w-4 h-4 text-emerald-400"></i>
+          <span class="text-slate-400">Salário:</span>
+          <span id="hdr-salary" class="text-emerald-400 font-extrabold">R$ 2.500</span>
+        </div>
+
+        <div class="flex items-center gap-2 bg-slate-900/80 px-3.5 py-1.5 rounded-xl border border-slate-800">
+          <i data-lucide="calendar" class="w-4 h-4 text-sky-400"></i>
+          <span class="text-slate-400">Fase:</span>
+          <span id="hdr-step" class="text-sky-400 font-extrabold">1. Renda</span>
+        </div>
+      </div>
+
+      <!-- CONTROLE DE SOM SINTETIZADO -->
+      <button id="sound-btn" onclick="toggleAudio()" class="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 transition-colors border border-slate-800 flex items-center justify-center cursor-pointer" title="Ativar/Desativar Som">
+        <i id="sound-icon" data-lucide="volume-2" class="w-4 h-4"></i>
+      </button>
+
+    </div>
+  </header>
+
+  <!-- CONTEÚDO PRINCIPAL DO JOGO -->
+  <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 flex flex-col justify-center">
+
+    <section id="step-login" class="hidden max-w-md mx-auto w-full my-auto py-4 animate-fade-in">
+      <div class="glass-card p-8 rounded-3xl space-y-6 text-center border border-slate-800 shadow-2xl relative overflow-hidden">
+        <div class="absolute -top-12 -right-12 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none"></div>
+        
+        <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-slate-950 font-black text-2xl mx-auto shadow-xl shadow-emerald-500/20">
+          <i data-lucide="log-in" class="w-8 h-8"></i>
+        </div>
+
+        <div class="space-y-2">
+          <h2 class="text-2xl font-black text-white">Bem-vindo ao Simulador</h2>
+          <p class="text-xs text-slate-400 leading-relaxed">Clique no botão abaixo para entrar e iniciar o seu desafio de poder de compra de 6 meses.</p>
+        </div>
+
+        <div class="pt-2">
+          <button onclick="handleLoginSubmit(event)" class="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black rounded-xl shadow-lg shadow-emerald-500/20 text-base transition-all transform hover:-translate-y-0.5 active:scale-95 flex items-center justify-center gap-2 cursor-pointer animate-glow">
+            <i data-lucide="log-in" class="w-5 h-5"></i>
+            <span>ENTRAR / LOGIN</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section id="step-1" class="hidden max-w-4xl mx-auto w-full space-y-8 my-auto py-4 animate-fade-in">
+      
+      <div class="text-center space-y-3">
+        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold tracking-wider uppercase animate-float">
+          <i data-lucide="zap" class="w-3.5 h-3.5"></i> Desafio Financeiro Interativo (6 Meses)
+        </div>
+        <h2 class="text-3xl sm:text-5xl font-black text-white tracking-tight leading-none">
+          O seu dinheiro aguenta a inflação?
+        </h2>
+        <p class="text-slate-400 text-xs sm:text-base max-w-xl mx-auto leading-relaxed">
+          Sua renda é fixa, mas o mercado reajusta preços todos os meses. Escolha um salário inicial e descubra como seu poder de compra reage ao longo de 6 meses.
+        </p>
+      </div>
+
+      <!-- Opções Prontas de Salário -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        
+        <button onclick="chooseSalaryPreset(1800, this)" class="salary-card glass-card-interactive p-5 rounded-2xl text-left flex flex-col justify-between space-y-4 cursor-pointer group">
+          <div class="flex justify-between items-start">
+            <div class="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <i data-lucide="user" class="w-5 h-5"></i>
+            </div>
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500 bg-slate-900 px-2 py-1 rounded">Início</span>
+          </div>
+          <div>
+            <span class="text-xs text-slate-400 font-medium">Estagiário / Júnior</span>
+            <h3 class="text-2xl font-black text-white mt-0.5">R$ 1.800</h3>
+            <p class="text-xs text-slate-400 mt-2">Margem apertada. Qualquer imprevisto no mercado requer cortes imediatos.</p>
+          </div>
+        </button>
+
+        <button onclick="chooseSalaryPreset(2500, this)" class="salary-card glass-card-interactive p-5 rounded-2xl text-left flex flex-col justify-between space-y-4 cursor-pointer group border-2 border-emerald-500/80 relative overflow-hidden">
+          <div class="absolute top-0 right-0 bg-emerald-500 text-slate-950 font-black text-[9px] uppercase px-2.5 py-0.5 rounded-bl-lg tracking-wider">
+            Recomendado
+          </div>
+          <div class="flex justify-between items-start">
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <i data-lucide="briefcase" class="w-5 h-5"></i>
+            </div>
+          </div>
+          <div>
+            <span class="text-xs text-slate-400 font-medium">Média do Trabalhador</span>
+            <h3 class="text-2xl font-black text-white mt-0.5">R$ 2.500</h3>
+            <p class="text-xs text-slate-400 mt-2">O salário padrão para equilibrar moradia, alimentação e um pouco de lazer.</p>
+          </div>
+        </button>
+
+        <button onclick="chooseSalaryPreset(4500, this)" class="salary-card glass-card-interactive p-5 rounded-2xl text-left flex flex-col justify-between space-y-4 cursor-pointer group">
+          <div class="flex justify-between items-start">
+            <div class="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <i data-lucide="award" class="w-5 h-5"></i>
+            </div>
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500 bg-slate-900 px-2 py-1 rounded">Pleno</span>
+          </div>
+          <div>
+            <span class="text-xs text-slate-400 font-medium">Profissional Especialista</span>
+            <h3 class="text-2xl font-black text-white mt-0.5">R$ 4.500</h3>
+            <p class="text-xs text-slate-400 mt-2">Maior flexibilidade no orçamento e maior capacidade de reserva técnica.</p>
+          </div>
+        </button>
+
+      </div>
+
+      <!-- Input de Valor Customizado -->
+      <div class="glass-card p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
+        <label for="custom-sal-input" class="text-xs font-bold text-slate-300 flex items-center gap-2">
+          <i data-lucide="sliders" class="w-4 h-4 text-emerald-400"></i>
+          Prefere simular com outro valor? Informe abaixo (R$):
+        </label>
+        <div class="relative w-full sm:w-60">
+          <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-extrabold">R$</span>
+          <input type="number" id="custom-sal-input" value="2500" min="1000" max="50000" step="100" class="w-full pl-11 pr-3 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-white font-extrabold focus:outline-none focus:border-emerald-500 transition-colors" oninput="updateCustomSalary(this.value)">
+        </div>
+      </div>
+
+      <!-- Botão para Próxima Fase -->
+      <div class="text-center pt-2">
+        <button onclick="goToBudgetSetup()" class="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black rounded-2xl shadow-xl shadow-emerald-500/20 text-base transition-all transform hover:-translate-y-1 hover:scale-105 active:scale-95 animate-glow flex items-center justify-center gap-2 mx-auto cursor-pointer">
+          <span>Montar Orçamento das 8 Categorias</span>
+          <i data-lucide="arrow-right" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+    </section>
+
+    <section id="step-2" class="hidden space-y-6">
+      
+      <!-- Banner com Status do Salário -->
+      <div class="glass-card p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <span class="text-[10px] font-extrabold uppercase tracking-widest text-emerald-400">Passo 2 de 4</span>
+          <h2 class="text-xl sm:text-2xl font-black text-white">Distribua seu Salário Mensal</h2>
+          <p class="text-xs text-slate-400 mt-0.5">Ajuste os valores das 8 áreas essenciais sem estourar seu limite fixo.</p>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <button onclick="applyAuto503020()" class="px-3.5 py-2 bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20 text-emerald-400 font-bold rounded-xl text-xs flex items-center gap-1.5 transition-colors cursor-pointer" title="Aplica a distribuição sugerida para a sua renda">
+            <i data-lucide="wand-2" class="w-4 h-4"></i>
+            <span>Equilibrar 100%</span>
+          </button>
+
+          <div id="budget-status-pill" class="px-4 py-2 rounded-xl text-xs font-black flex items-center gap-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+            <i data-lucide="check-circle" class="w-4 h-4"></i>
+            <span id="budget-status-text">Sobra: R$ 0,00</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        <!-- Sliders das 8 Categorias -->
+        <div class="lg:col-span-7 glass-card p-5 sm:p-6 rounded-2xl space-y-4">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+            <h3 class="text-xs font-black uppercase tracking-wider text-slate-300">Detalhamento das Despesas</h3>
+            <span class="text-[11px] text-slate-500">Internet e Lazer separadas</span>
+          </div>
+
+          <div id="sliders-container" class="space-y-3.5">
+            <!-- Injetado dinamicamente via JS -->
+          </div>
+        </div>
+
+        <!-- Resumo Gráfico e Botão de Início -->
+        <div class="lg:col-span-5 space-y-5">
+          
+          <div class="glass-card p-5 rounded-2xl text-center space-y-4">
+            <h3 class="text-xs font-black uppercase tracking-wider text-slate-300">Divisão do Orçamento</h3>
+            <div class="relative w-48 h-48 mx-auto">
+              <canvas id="budgetDonutChart"></canvas>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-2 text-left pt-2 border-t border-slate-800/80 text-xs">
+              <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800">
+                <span class="text-slate-400 text-[10px] uppercase font-bold block">Salário Fixo</span>
+                <span id="donut-sal-val" class="font-extrabold text-white text-sm">R$ 2.500</span>
+              </div>
+              <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800">
+                <span class="text-slate-400 text-[10px] uppercase font-bold block">Soma dos Gastos</span>
+                <span id="donut-cost-val" class="font-extrabold text-emerald-400 text-sm">R$ 2.500</span>
+              </div>
+            </div>
+          </div>
+
+          <div id="budget-warning-box" class="hidden p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs space-y-1">
+            <div class="flex items-center gap-2 font-bold text-rose-400">
+              <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+              <span>Orçamento Estourado!</span>
+            </div>
+            <p>Seus gastos superam seu salário. Clique no botão "Equilibrar 100%" ou reduza os sliders para prosseguir.</p>
+          </div>
+
+          <button id="lock-budget-btn" onclick="confirmInitialBudget()" class="w-full py-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-2xl shadow-xl shadow-emerald-500/20 text-sm transition-all flex items-center justify-center gap-2 cursor-pointer">
+            <span>Iniciar Simulação Mês a Mês</span>
+            <i data-lucide="play" class="w-4 h-4"></i>
+          </button>
+
+        </div>
+
+      </div>
+
+    </section>
+
+    <section id="step-3" class="hidden space-y-6">
+      
+      <!-- Indicadores de Acompanhamento -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+        
+        <div class="glass-card p-4 rounded-2xl flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center flex-shrink-0">
+            <i data-lucide="calendar" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <span class="text-[10px] text-slate-400 font-bold uppercase block">Etapa Atual</span>
+            <span id="sim-month-indicator" class="text-base font-black text-white">Mês 2 de 6</span>
+          </div>
+        </div>
+
+        <div class="glass-card p-4 rounded-2xl flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0">
+            <i data-lucide="wallet" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <span class="text-[10px] text-slate-400 font-bold uppercase block">Salário Fixo</span>
+            <span id="sim-salary-display" class="text-base font-black text-emerald-400">R$ 2.500</span>
+          </div>
+        </div>
+
+        <div class="glass-card p-4 rounded-2xl flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center flex-shrink-0">
+            <i data-lucide="shopping-cart" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <span class="text-[10px] text-slate-400 font-bold uppercase block">Custo Atual</span>
+            <span id="sim-cost-display" class="text-base font-black text-rose-400">R$ 2.500</span>
+          </div>
+        </div>
+
+        <div class="glass-card p-4 rounded-2xl flex items-center gap-3">
+          <div id="sim-balance-icon-wrap" class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0">
+            <i data-lucide="piggy-bank" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <span class="text-[10px] text-slate-400 font-bold uppercase block">Saldo do Mês</span>
+            <span id="sim-balance-display" class="text-base font-black text-emerald-400">R$ 0,00</span>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        <!-- BARALHO DE CARTAS 3D -->
+        <div class="lg:col-span-5 glass-card p-6 rounded-2xl text-center space-y-4 flex flex-col justify-between min-h-[380px]">
+          <div>
+            <h3 class="text-xs font-black uppercase tracking-wider text-slate-300">Acontecimentos do Mês</h3>
+            <p class="text-[11px] text-slate-400 mt-0.5">Sorteie uma carta de inflação ou imprevisto real do mercado</p>
+          </div>
+
+          <!-- CONTAINER DA CARTA 3D -->
+          <div class="perspective-1000 w-full max-w-xs mx-auto h-64 cursor-pointer my-2" onclick="drawMonthlyCard()">
+            <div id="card-3d-inner" class="transform-style-3d relative w-full h-full rounded-2xl shadow-2xl">
+              
+              <!-- FRENTE DA CARTA -->
+              <div class="backface-hidden absolute inset-0 rounded-2xl border-2 border-emerald-500/30 bg-gradient-to-br from-slate-900 via-slate-950 to-emerald-950/40 p-6 flex flex-col items-center justify-center space-y-3 text-center">
+                <div class="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 animate-pulse">
+                  <i data-lucide="help-circle" class="w-8 h-8"></i>
+                </div>
+                <h4 class="text-base font-extrabold text-white">Baralho de Inflação</h4>
+                <p class="text-xs text-slate-400">Clique para revelar o reajuste do mercado neste mês</p>
+                <button onclick="event.stopPropagation(); drawMonthlyCard();" class="mt-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider transition-all shadow-lg shadow-emerald-500/20 hover:scale-105 active:scale-95 animate-glow cursor-pointer">
+                  Sortear Carta
+                </button>
+              </div>
+
+              <!-- VERSO DA CARTA (REVELADA) -->
+              <div class="backface-hidden rotate-y-180 absolute inset-0 rounded-2xl border border-rose-500/40 bg-gradient-to-b from-slate-900 via-slate-950 to-slate-950 p-5 flex flex-col justify-between text-left shadow-2xl">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                  <span id="card-category-badge" class="px-2.5 py-1 bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[10px] font-black rounded-lg uppercase tracking-wider">
+                    Alimentação
+                  </span>
+                  <span id="card-hike-tag" class="text-xs font-black text-rose-400">+15%</span>
+                </div>
+
+                <div class="my-auto space-y-1.5">
+                  <h3 id="card-event-title" class="text-base font-bold text-white leading-tight">Alta nos Alimentos</h3>
+                  <p id="card-event-desc" class="text-slate-300 text-xs leading-relaxed">
+                    Preços do supermercado e da feira subiram significativamente.
+                  </p>
+                </div>
+
+                <div class="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800 text-xs flex items-center justify-between">
+                  <span class="text-slate-400">Impacto Direto:</span>
+                  <strong id="card-impact-value" class="text-rose-400 font-extrabold">+ R$ 105,00</strong>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <p class="text-[11px] text-slate-500">
+            Cada rodada simula reajustes econômicos acumulados no Brasil.
+          </p>
+        </div>
+
+        <!-- Painel de Reajuste do Mês -->
+        <div class="lg:col-span-7 glass-card p-5 sm:p-6 rounded-2xl space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div>
+              <h3 class="text-base font-bold text-white">Reorganize suas contas</h3>
+              <p class="text-xs text-slate-400">Reduza Lazer, Internet ou Reserva para cobrir os reajustes.</p>
+            </div>
+            <span id="rebalance-status-badge" class="px-3 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-bold">
+              Orçamento em Dia
+            </span>
+          </div>
+
+          <div id="readjust-sliders-wrapper" class="space-y-3 max-h-[340px] overflow-y-auto pr-1">
+            <!-- Sliders de reajuste inseridos dinamicamente -->
+          </div>
+
+          <div id="readjust-warning-alert" class="hidden p-3.5 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-300 text-xs flex items-center gap-3">
+            <i data-lucide="alert-circle" class="w-5 h-5 flex-shrink-0 text-rose-400"></i>
+            <div>
+              <strong>Conta no Vermelho!</strong> Reduza gastos flexíveis (Lazer, Internet) para não fechar o mês no prejuízo.
+            </div>
+          </div>
+
+          <button id="advance-month-btn" disabled onclick="handleAdvanceMonth()" class="w-full py-4 bg-slate-800 text-slate-500 cursor-not-allowed font-black rounded-2xl transition-all flex items-center justify-center gap-2 text-sm">
+            <span>Puxe a carta do mês para continuar</span>
+            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+      </div>
+
+    </section>
+
+    <section id="step-4" class="hidden space-y-8 py-4">
+      
+      <div class="text-center space-y-3 max-w-2xl mx-auto">
+        <span class="px-3.5 py-1.5 bg-sky-500/10 border border-sky-500/30 text-sky-400 rounded-full text-xs font-bold uppercase tracking-wider inline-flex items-center gap-1.5">
+          <i data-lucide="award" class="w-3.5 h-3.5"></i> Veredito do Poder de Compra Real (6 Meses)
+        </span>
+        <h2 class="text-3xl sm:text-4xl font-black text-white">
+          Seu Salário Aguentou?
+        </h2>
+        <p class="text-slate-400 text-xs sm:text-sm">
+          Mesmo sem redução no holerite nominal, a alta generalizada de preços acumulada em 6 meses corroeu seu poder de compra. Confira os resultados:
+        </p>
+      </div>
+
+      <!-- Métricas Principais -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        
+        <div class="glass-card p-6 rounded-2xl flex flex-col justify-between space-y-4">
+          <div class="space-y-1">
+            <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Perda do Poder de Compra</span>
+            <div id="final-loss-pct" class="text-3xl sm:text-4xl font-black text-rose-400">-18.2%</div>
+            <p class="text-xs text-slate-400 pt-1">O seu salário de <strong id="final-nominal-sal" class="text-white">R$ 2.500,00</strong> passou a valer na prática:</p>
+          </div>
+          <div class="p-3.5 bg-slate-900/90 rounded-xl border border-slate-800">
+            <span class="text-[10px] text-slate-400 font-bold uppercase block">Poder Real Equivalente</span>
+            <span id="final-real-sal" class="text-xl font-black text-emerald-400">R$ 2.045,00</span>
+          </div>
+        </div>
+
+        <div class="glass-card p-6 rounded-2xl flex flex-col justify-between space-y-4">
+          <div class="space-y-1">
+            <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Custo Adicional Inflacionado</span>
+            <div id="final-cost-diff" class="text-3xl sm:text-4xl font-black text-amber-400">+ R$ 455,00</div>
+            <p class="text-xs text-slate-400 pt-1">Aumento acumulado no valor total das despesas para manter o mesmo consumo.</p>
+          </div>
+          <div class="p-3.5 bg-slate-900/90 rounded-xl border border-slate-800 flex items-center justify-between text-xs">
+            <span>Mês 1: <strong id="final-m1-cost" class="text-white">R$ 2.500</strong></span>
+            <i data-lucide="arrow-right" class="w-4 h-4 text-slate-500"></i>
+            <span>Mês 6: <strong id="final-m6-cost" class="text-rose-400">R$ 2.955</strong></span>
+          </div>
+        </div>
+
+        <div class="glass-card p-6 rounded-2xl flex flex-col justify-between space-y-4">
+          <div class="space-y-1">
+            <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Saldo da Reserva de Emergência</span>
+            <div id="final-reserve-val" class="text-3xl sm:text-4xl font-black text-emerald-400">R$ 100,00</div>
+            <p class="text-xs text-slate-400 pt-1">Sobras financeiras acumuladas ao longo dos meses para lidar com imprevistos.</p>
+          </div>
+          <div id="final-status-badge" class="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-xs text-emerald-400 font-bold text-center">
+            Orçamento Equilibrado Com Sucesso!
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Comparativo Prático de Consumo Físico -->
+      <div class="glass-card p-6 sm:p-8 rounded-3xl space-y-6">
+        <div class="flex items-center gap-2.5">
+          <div class="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+            <i data-lucide="shopping-bag" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold text-white">O que o seu dinheiro comprava x O que compra agora</h3>
+            <p class="text-xs text-slate-400">Perda de itens físicos reais no seu carrinho ao final de 6 meses</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+          
+          <div class="bg-slate-900/80 p-5 rounded-2xl border border-slate-800 space-y-3">
+            <div class="flex items-center gap-3">
+              <span class="text-3xl">🛒</span>
+              <div>
+                <h4 class="font-bold text-white text-sm">Cestas Básicas</h4>
+                <p class="text-[11px] text-slate-400">Alimentação básica do mês</p>
+              </div>
+            </div>
+            <div class="pt-3 border-t border-slate-800 flex justify-between items-center text-xs">
+              <span class="text-slate-400">Antes: <strong id="basket-food-1" class="text-emerald-400 font-bold">3.5 cestas</strong></span>
+              <span class="text-slate-400">Depois: <strong id="basket-food-2" class="text-rose-400 font-bold">2.8 cestas</strong></span>
+            </div>
+          </div>
+
+          <div class="bg-slate-900/80 p-5 rounded-2xl border border-slate-800 space-y-3">
+            <div class="flex items-center gap-3">
+              <span class="text-3xl">🚌</span>
+              <div>
+                <h4 class="font-bold text-white text-sm">Passagens / Combustível</h4>
+                <p class="text-[11px] text-slate-400">Mobilidade e transporte diário</p>
+              </div>
+            </div>
+            <div class="pt-3 border-t border-slate-800 flex justify-between items-center text-xs">
+              <span class="text-slate-400">Antes: <strong id="basket-trans-1" class="text-emerald-400 font-bold">50 passagens</strong></span>
+              <span class="text-slate-400">Depois: <strong id="basket-trans-2" class="text-rose-400 font-bold">41 passagens</strong></span>
+            </div>
+          </div>
+
+          <div class="bg-slate-900/80 p-5 rounded-2xl border border-slate-800 space-y-3">
+            <div class="flex items-center gap-3">
+              <span class="text-3xl">🎟️</span>
+              <div>
+                <h4 class="font-bold text-white text-sm">Passeios e Lazer</h4>
+                <p class="text-[11px] text-slate-400">Saídas de fim de semana</p>
+              </div>
+            </div>
+            <div class="pt-3 border-t border-slate-800 flex justify-between items-center text-xs">
+              <span class="text-slate-400">Antes: <strong id="basket-leisure-1" class="text-emerald-400 font-bold">4 saídas</strong></span>
+              <span class="text-slate-400">Depois: <strong id="basket-leisure-2" class="text-rose-400 font-bold">1 saída</strong></span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Gráfico da Evolução do Custo x Salário -->
+      <div class="glass-card p-6 rounded-3xl space-y-4">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i data-lucide="line-chart" class="w-5 h-5 text-sky-400"></i>
+          <span>Evolução do Custo de Vida x Salário Fixo (6 Meses)</span>
+        </h3>
+        <div class="h-64 w-full">
+          <canvas id="evolutionChart"></canvas>
+        </div>
+      </div>
+
+      <div class="text-center pt-2">
+        <button onclick="resetToStep(1)" class="px-8 py-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-2xl shadow-xl shadow-emerald-500/20 text-base transition-all flex items-center justify-center gap-2 mx-auto cursor-pointer">
+          <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
+          <span>Jogar Novamente</span>
+        </button>
+      </div>
+
+    </section>
+
+  </main>
+
+  <footer class="border-t border-slate-800/80 bg-slate-950/80 py-4 text-center text-xs text-slate-500">
+    <div class="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+      <p>Simulador Educacional "Seu Salário Aguenta?" - Educação Financeira Prática</p>
+      <p class="text-slate-600">Construído em HTML5 + Tailwind CSS + Chart.js + Tone.js</p>
+    </div>
+  </footer>
+
+  <!-- JAVASCRIPT DO MOTOR DO JOGO E DA INTERFACE (INTEGRADO) -->
+  <script>
+    /**
+     * Motor de Lógica do Jogo "Seu Salário Aguenta?"
+     * Integrado diretamente na aplicação
+     */
+    class SalaryGameEngine {
+      constructor(options = {}) {
+        this.totalMonths = options.totalMonths || 6;
+        this.onStateChange = options.onStateChange || null;
+
+        // Definição das 8 categorias exigidas (Internet e Lazer separadas)
+        this.categories = {
+          moradia: { name: "Moradia (Aluguel/Condomínio)", icon: "home", color: "#3b82f6", defaultPct: 0.35 },
+          alimentacao: { name: "Alimentação (Mercado/Feira)", icon: "shopping-cart", color: "#10b981", defaultPct: 0.28 },
+          energiaAgua: { name: "Energia Elétrica & Água", icon: "zap", color: "#f59e0b", defaultPct: 0.10 },
+          transporte: { name: "Transporte / Combustível", icon: "bus", color: "#8b5cf6", defaultPct: 0.10 },
+          saude: { name: "Saúde & Farmácia", icon: "heart-pulse", color: "#ec4899", defaultPct: 0.05 },
+          internet: { name: "Internet & Telefone", icon: "wifi", color: "#06b6d4", defaultPct: 0.04 },
+          lazer: { name: "Lazer & Saídas", icon: "sparkles", color: "#f43f5e", defaultPct: 0.04 },
+          reserva: { name: "Reserva de Emergência", icon: "piggy-bank", color: "#10b981", defaultPct: 0.04 }
+        };
+
+        // Baralho de eventos de inflação e perrengues reais
+        this.eventDeck = [
+          {
+            id: "food_inflation",
+            title: "Inflação nos Alimentos (+15%)",
+            description: "Seca e alta do frete elevaram o preço dos produtos de feira e supermercado.",
+            category: "alimentacao",
+            increasePercent: 15,
+            tag: "Supermercado"
+          },
+          {
+            id: "red_flag_energy",
+            title: "Bandeira Vermelha na Luz (+20%)",
+            description: "A queda nos reservatórios das usinas acionou a tarifa emergencial de energia.",
+            category: "energiaAgua",
+            increasePercent: 20,
+            tag: "Energia"
+          },
+          {
+            id: "fuel_price_hike",
+            title: "Reajuste de Combustíveis (+12%)",
+            description: "Alta no preço do petróleo aumentou o valor do litro na bomba e das passagens.",
+            category: "transporte",
+            increasePercent: 12,
+            tag: "Transporte"
+          },
+          {
+            id: "health_emergency",
+            title: "Imprevisto Médico / Farmácia",
+            description: "Aumento nos preços de remédios e consulta odontológica não planejada.",
+            category: "saude",
+            fixedAmount: 150,
+            tag: "Saúde"
+          },
+          {
+            id: "internet_plan_increase",
+            title: "Reajuste Anual da Banda Larga (+15%)",
+            description: "A operadora aplicou a correção anual do contrato do seu plano de internet.",
+            category: "internet",
+            increasePercent: 15,
+            tag: "Internet"
+          },
+          {
+            id: "leisure_ticket_hike",
+            title: "Ingressos e Restaurantes (+25%)",
+            description: "Locais de lazer e passeios reajustaram seus valores acompanhando a inflação.",
+            category: "lazer",
+            increasePercent: 25,
+            tag: "Lazer"
+          }
+        ];
+
+        this.reset(options.salary || 2500);
+      }
+
+      reset(salary) {
+        this.salary = parseFloat(salary) || 2500;
+        this.currentMonth = 1;
+        this.isSimulationStarted = false;
+        this.hasDrawnCardThisMonth = false;
+        this.currentDrawnEvent = null;
+        this.history = [];
+
+        this.shuffledDeck = [...this.eventDeck].sort(() => Math.random() - 0.5);
+
+        this.initialExpenses = {};
+        Object.keys(this.categories).forEach(cat => {
+          this.initialExpenses[cat] = Math.round(this.salary * this.categories[cat].defaultPct);
+        });
+
+        // Garante ajuste da sobra na reserva de emergência
+        const sum = Object.values(this.initialExpenses).reduce((a, b) => a + b, 0);
+        const diff = this.salary - sum;
+        this.initialExpenses.reserva += diff;
+
+        this.currentExpenses = { ...this.initialExpenses };
+        this._notify();
+      }
+
+      setSalary(newSalary) {
+        this.reset(newSalary);
+      }
+
+      setInitialExpense(category, value) {
+        if (this.isSimulationStarted) return;
+        if (this.initialExpenses[category] !== undefined) {
+          this.initialExpenses[category] = Math.max(0, parseFloat(value) || 0);
+          this.currentExpenses = { ...this.initialExpenses };
+          this._notify();
+        }
+      }
+
+      getBaselineSummary() {
+        const totalCost = Object.values(this.initialExpenses).reduce((a, b) => a + b, 0);
+        const freeBalance = this.salary - totalCost;
+        return {
+          salary: this.salary,
+          totalExpenses: totalCost,
+          freeBalance: freeBalance,
+          isValid: freeBalance >= 0
+        };
+      }
+
+      startSimulation() {
+        const summary = this.getBaselineSummary();
+        if (!summary.isValid) return { success: false, message: "Orçamento estourado!" };
+
+        this.isSimulationStarted = true;
+        this.currentMonth = 2;
+
+        this.history.push({
+          month: 1,
+          salary: this.salary,
+          expenses: { ...this.initialExpenses },
+          totalCost: summary.totalExpenses,
+          eventTitle: "Mês Base - Início da Jornada"
+        });
+
+        this._notify();
+        return { success: true };
+      }
+
+      drawMonthEvent() {
+        if (!this.isSimulationStarted || this.hasDrawnCardThisMonth) return null;
+
+        if (!this.shuffledDeck || this.shuffledDeck.length === 0) {
+          this.shuffledDeck = [...this.eventDeck].sort(() => Math.random() - 0.5);
+        }
+        const event = this.shuffledDeck.pop();
+
+        let increaseValue = 0;
+        if (event.increasePercent) {
+          increaseValue = Math.round(this.currentExpenses[event.category] * (event.increasePercent / 100));
+        } else if (event.fixedAmount) {
+          increaseValue = event.fixedAmount;
+        }
+
+        this.currentExpenses[event.category] += increaseValue;
+        this.hasDrawnCardThisMonth = true;
+        this.currentDrawnEvent = {
+          ...event,
+          appliedIncrease: increaseValue
+        };
+
+        this._notify();
+        return this.currentDrawnEvent;
+      }
+
+      adjustCurrentExpense(category, newValue) {
+        if (!this.hasDrawnCardThisMonth) return;
+        if (this.currentExpenses[category] !== undefined) {
+          this.currentExpenses[category] = Math.max(0, parseFloat(newValue) || 0);
+          this._notify();
+        }
+      }
+
+      getCurrentMonthSummary() {
+        const totalCost = Object.values(this.currentExpenses).reduce((a, b) => a + b, 0);
+        const balance = this.salary - totalCost;
+
+        return {
+          month: this.currentMonth,
+          totalMonths: this.totalMonths,
+          salary: this.salary,
+          totalCost: totalCost,
+          balance: balance,
+          isDeficit: balance < 0,
+          hasDrawnCard: this.hasDrawnCardThisMonth,
+          currentEvent: this.currentDrawnEvent
+        };
+      }
+
+      advanceMonth() {
+        if (!this.hasDrawnCardThisMonth) return { success: false };
+
+        const currentCost = Object.values(this.currentExpenses).reduce((a, b) => a + b, 0);
+
+        this.history.push({
+          month: this.currentMonth,
+          salary: this.salary,
+          expenses: { ...this.currentExpenses },
+          totalCost: currentCost,
+          eventTitle: this.currentDrawnEvent ? this.currentDrawnEvent.title : "Sem evento"
+        });
+
+        if (this.currentMonth < this.totalMonths) {
+          this.currentMonth++;
+          this.hasDrawnCardThisMonth = false;
+          this.currentDrawnEvent = null;
+          this._notify();
+          return { success: true, finished: false };
+        } else {
+          this._notify();
+          return { success: true, finished: true, report: this.generateFinalReport() };
+        }
+      }
+
+      generateFinalReport() {
+        if (this.history.length === 0) return null;
+
+        const firstMonthCost = this.history[0].totalCost;
+        const finalMonthCost = this.history[this.history.length - 1].totalCost;
+        const totalCostIncrease = finalMonthCost - firstMonthCost;
+
+        const purchasingPowerRatio = firstMonthCost / finalMonthCost;
+        const percentagePowerLoss = ((1 - purchasingPowerRatio) * 100).toFixed(1);
+        const realSalaryEquivalent = (this.salary * purchasingPowerRatio).toFixed(2);
+
+        const foodM1 = this.history[0].expenses.alimentacao;
+        const foodFinal = this.history[this.history.length - 1].expenses.alimentacao;
+
+        const transportM1 = this.history[0].expenses.transporte;
+        const transportFinal = this.history[this.history.length - 1].expenses.transporte;
+
+        const leisureM1 = this.history[0].expenses.lazer;
+        const leisureFinal = this.history[this.history.length - 1].expenses.lazer;
+
+        return {
+          nominalSalary: this.salary,
+          realSalaryEquivalent: parseFloat(realSalaryEquivalent),
+          percentagePowerLoss: parseFloat(percentagePowerLoss),
+          totalCostIncrease: totalCostIncrease,
+          firstMonthCost: firstMonthCost,
+          finalMonthCost: finalMonthCost,
+          finalReserve: this.currentExpenses.reserva,
+          history: this.history,
+          
+          basketComparison: {
+            basicFoodBaskets: {
+              before: (foodM1 / 200).toFixed(1),
+              after: (foodM1 / (200 * (foodFinal / foodM1))).toFixed(1)
+            },
+            transitTickets: {
+              before: Math.round(transportM1 / 5),
+              after: Math.round(transportM1 / (5 * (transportFinal / transportM1)))
+            },
+            leisureOutings: {
+              before: Math.round(leisureM1 / 30),
+              after: Math.max(0, Math.round(leisureFinal / 35))
+            }
+          }
+        };
+      }
+
+      _notify() {
+        if (typeof this.onStateChange === 'function') {
+          this.onStateChange(this);
+        }
+      }
+    }
+
+    let gameEngine = null;
+    let isAudioMuted = false;
+    let synth = null;
+    let donutChart = null;
+    let lineChart = null;
+
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+
+      // Inicializa a engine do jogo
+      gameEngine = new SalaryGameEngine({
+        salary: 2500,
+        totalMonths: 6,
+        onStateChange: handleEngineStateChange
+      });
+
+      startLoadingScreen();
+    });
+
+    function startLoadingScreen() {
+      const progressBar = document.getElementById('loading-progress-bar');
+      const pctText = document.getElementById('loading-pct-text');
+      const statusText = document.getElementById('loading-status-text');
+      const loadingScreen = document.getElementById('loading-screen');
+      const loginStep = document.getElementById('step-login');
+
+      const statusMessages = [
+        "Carregando índices de inflação...",
+        "Sincronizando taxas de energia e combustíveis...",
+        "Calculando cesta básica acumulada...",
+        "Preparando simulação financeira...",
+        "Tudo pronto!"
+      ];
+
+      const duration = 5000;
+      const intervalTime = 50;
+      let elapsed = 0;
+
+      const interval = setInterval(() => {
+        elapsed += intervalTime;
+        const pct = Math.min(100, Math.floor((elapsed / duration) * 100));
+
+        if (progressBar) progressBar.style.width = pct + '%';
+        if (pctText) pctText.innerText = pct + '%';
+
+        const msgIndex = Math.min(statusMessages.length - 1, Math.floor((pct / 100) * statusMessages.length));
+        if (statusText) statusText.innerText = statusMessages[msgIndex];
+
+        if (elapsed >= duration) {
+          clearInterval(interval);
+          setTimeout(() => {
+            if (loadingScreen) {
+              loadingScreen.classList.add('opacity-0', 'pointer-events-none');
+              setTimeout(() => {
+                loadingScreen.classList.add('hidden');
+                if (loginStep) {
+                  loginStep.classList.remove('hidden');
+                  loginStep.classList.add('animate-fade-in');
+                }
+              }, 700);
+            }
+          }, 300);
+        }
+      }, intervalTime);
+    }
+
+    function handleLoginSubmit(e) {
+      if (e && e.preventDefault) e.preventDefault();
+      playAudioFx('win');
+      switchStepWithAnimation('step-login', 'step-1');
+    }
+
+    function skipLogin() {
+      playAudioFx('click');
+      switchStepWithAnimation('step-login', 'step-1');
+    }
+
+    function playAudioFx(type) {
+      if (isAudioMuted) return;
+      try {
+        if (!synth) {
+          synth = new Tone.Synth().toDestination();
+          synth.volume.value = -12;
+        }
+        Tone.start();
+
+        if (type === 'click') {
+          synth.triggerAttackRelease("C5", "16n");
+        } else if (type === 'draw') {
+          synth.triggerAttackRelease("G4", "8n");
+        } else if (type === 'win') {
+          synth.triggerAttackRelease("E5", "8n");
+        } else if (type === 'alert') {
+          synth.triggerAttackRelease("A3", "16n");
+        }
+      } catch (e) {}
+    }
+
+    function toggleAudio() {
+      isAudioMuted = !isAudioMuted;
+      const btnIcon = document.getElementById('sound-icon');
+      if (isAudioMuted) {
+        btnIcon.setAttribute('data-lucide', 'volume-x');
+      } else {
+        btnIcon.setAttribute('data-lucide', 'volume-2');
+        playAudioFx('click');
+      }
+      lucide.createIcons();
+    }
+
+    function chooseSalaryPreset(sal, cardElement) {
+      playAudioFx('click');
+      document.querySelectorAll('.salary-card').forEach(c => {
+        c.classList.remove('border-2', 'border-emerald-500/80');
+      });
+      if (cardElement) {
+        cardElement.classList.add('border-2', 'border-emerald-500/80');
+      }
+
+      document.getElementById('custom-sal-input').value = sal;
+      gameEngine.setSalary(sal);
+    }
+
+    function updateCustomSalary(val) {
+      const sal = Math.max(500, parseFloat(val) || 0);
+      gameEngine.setSalary(sal);
+    }
+
+    function switchStepWithAnimation(fromId, toId) {
+      const fromEl = document.getElementById(fromId);
+      const toEl = document.getElementById(toId);
+
+      if (fromEl) fromEl.classList.add('hidden');
+      if (toEl) {
+        toEl.classList.remove('hidden');
+        toEl.classList.remove('animate-fade-in');
+        void toEl.offsetWidth;
+        toEl.classList.add('animate-fade-in');
+      }
+    }
+
+    function animateValue(elementId, start, end, duration = 800, isCurrency = true, suffix = '') {
+      const obj = document.getElementById(elementId);
+      if (!obj) return;
+
+      let startTimestamp = null;
+      const step = (timestamp) => {
+        if (!startTimestamp) startTimestamp = timestamp;
+        const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+        const easeProgress = 1 - Math.pow(1 - progress, 3);
+        const current = start + (end - start) * easeProgress;
+
+        if (isCurrency) {
+          obj.innerText = formatBRL(current);
+        } else {
+          obj.innerText = current.toFixed(1) + suffix;
+        }
+
+        if (progress < 1) {
+          window.requestAnimationFrame(step);
+        } else {
+          if (isCurrency) obj.innerText = formatBRL(end);
+          else obj.innerText = end.toFixed(1) + suffix;
+          obj.classList.add('animate-pop');
+          setTimeout(() => obj.classList.remove('animate-pop'), 300);
+        }
+      };
+      window.requestAnimationFrame(step);
+    }
+
+    function goToBudgetSetup() {
+      playAudioFx('click');
+      switchStepWithAnimation('step-1', 'step-2');
+      document.getElementById('header-tracker').classList.remove('hidden');
+
+      document.getElementById('hdr-salary').innerText = formatBRL(gameEngine.salary);
+      document.getElementById('hdr-step').innerText = "2. Orçamento";
+
+      renderCategorySliders();
+      initDonutChart();
+      updateBudgetSummary();
+    }
+
+    function renderCategorySliders() {
+      const container = document.getElementById('sliders-container');
+      container.innerHTML = '';
+
+      Object.keys(gameEngine.categories).forEach(k => {
+        const cat = gameEngine.categories[k];
+        const val = gameEngine.initialExpenses[k];
+
+        const div = document.createElement('div');
+        div.className = "bg-slate-900/80 p-3 rounded-xl border border-slate-800 space-y-1.5";
+        div.innerHTML = `
+          <div class="flex items-center justify-between text-xs sm:text-sm">
+            <span class="font-bold text-slate-200 flex items-center gap-2">
+              <i data-lucide="${cat.icon}" class="w-4 h-4 text-emerald-400"></i>
+              ${cat.name}
+            </span>
+            <span id="slider-val-txt-${k}" class="font-extrabold text-white">${formatBRL(val)}</span>
+          </div>
+          <input type="range" 
+                 min="0" 
+                 max="${Math.round(gameEngine.salary * 0.6)}" 
+                 step="10" 
+                 value="${val}" 
+                 oninput="handleSliderChange('${k}', this.value)"
+                 class="w-full accent-emerald-500 h-2 bg-slate-800 rounded-lg cursor-pointer">
+        `;
+        container.appendChild(div);
+      });
+
+      lucide.createIcons();
+    }
+
+    function handleSliderChange(key, val) {
+      gameEngine.setInitialExpense(key, val);
+      document.getElementById(`slider-val-txt-${key}`).innerText = formatBRL(gameEngine.initialExpenses[key]);
+      updateBudgetSummary();
+      updateDonutChart();
+    }
+
+    function applyAuto503020() {
+      playAudioFx('click');
+      gameEngine.reset(gameEngine.salary);
+      renderCategorySliders();
+      updateBudgetSummary();
+      updateDonutChart();
+    }
+
+    function updateBudgetSummary() {
+      const baseline = gameEngine.getBaselineSummary();
+
+      document.getElementById('donut-sal-val').innerText = formatBRL(baseline.salary);
+      document.getElementById('donut-cost-val').innerText = formatBRL(baseline.totalExpenses);
+
+      const pill = document.getElementById('budget-status-pill');
+      const text = document.getElementById('budget-status-text');
+      const warningBox = document.getElementById('budget-warning-box');
+
+      if (!baseline.isValid) {
+        pill.className = "px-4 py-2 rounded-xl text-xs font-black flex items-center gap-2 bg-rose-500/10 text-rose-400 border border-rose-500/30 pulse-warning";
+        text.innerText = `Déficit: ${formatBRL(Math.abs(baseline.freeBalance))}`;
+        warningBox.classList.remove('hidden');
+      } else {
+        pill.className = "px-4 py-2 rounded-xl text-xs font-black flex items-center gap-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30";
+        text.innerText = `Sobra: ${formatBRL(baseline.freeBalance)}`;
+        warningBox.classList.add('hidden');
+      }
+    }
+
+    function initDonutChart() {
+      const ctx = document.getElementById('budgetDonutChart').getContext('2d');
+      const labels = Object.keys(gameEngine.categories).map(k => gameEngine.categories[k].name.split(' ')[0]);
+      const dataVals = Object.keys(gameEngine.categories).map(k => gameEngine.initialExpenses[k]);
+      const colors = Object.keys(gameEngine.categories).map(k => gameEngine.categories[k].color);
+
+      if (donutChart) donutChart.destroy();
+
+      donutChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: labels,
+          datasets: [{ data: dataVals, backgroundColor: colors, borderWidth: 0 }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          cutout: '72%'
+        }
+      });
+    }
+
+    function updateDonutChart() {
+      if (!donutChart) return;
+      donutChart.data.datasets[0].data = Object.keys(gameEngine.categories).map(k => gameEngine.initialExpenses[k]);
+      donutChart.update();
+    }
+
+    function confirmInitialBudget() {
+      const result = gameEngine.startSimulation();
+      if (!result.success) {
+        playAudioFx('alert');
+        const warningBox = document.getElementById('budget-warning-box');
+        warningBox.classList.remove('hidden');
+        warningBox.classList.add('animate-shake');
+        setTimeout(() => warningBox.classList.remove('animate-shake'), 600);
+        return;
+      }
+
+      playAudioFx('win');
+      switchStepWithAnimation('step-2', 'step-3');
+      setupSimulationMonth();
+    }
+
+    function setupSimulationMonth() {
+      const monthSummary = gameEngine.getCurrentMonthSummary();
+
+      document.getElementById('hdr-step').innerText = `3. Mês ${gameEngine.currentMonth}`;
+      document.getElementById('sim-month-indicator').innerText = `Mês ${gameEngine.currentMonth} de ${gameEngine.totalMonths}`;
+      document.getElementById('sim-salary-display').innerText = formatBRL(gameEngine.salary);
+
+      document.getElementById('sim-cost-display').innerText = formatBRL(monthSummary.totalCost);
+      document.getElementById('sim-balance-display').innerText = formatBRL(monthSummary.balance);
+
+      const cardInner = document.getElementById('card-3d-inner');
+      if (cardInner) cardInner.classList.remove('rotate-y-180');
+
+      const advanceBtn = document.getElementById('advance-month-btn');
+      advanceBtn.disabled = true;
+      advanceBtn.className = "w-full py-4 bg-slate-800 text-slate-500 cursor-not-allowed font-black rounded-2xl transition-all flex items-center justify-center gap-2 text-sm";
+      advanceBtn.querySelector('span').innerText = "Puxe a carta do mês para continuar";
+
+      renderReadjustSliders();
+      checkReadjustBalance();
+    }
+
+    function drawMonthlyCard() {
+      if (gameEngine.hasDrawnCardThisMonth) return;
+
+      playAudioFx('draw');
+      const event = gameEngine.drawMonthEvent();
+      if (!event) return;
+
+      const cardContainer = document.querySelector('.perspective-1000');
+      if (cardContainer) {
+        cardContainer.classList.add('animate-shake');
+        setTimeout(() => cardContainer.classList.remove('animate-shake'), 500);
+      }
+
+      setTimeout(() => {
+        const cardInner = document.getElementById('card-3d-inner');
+        if (cardInner) cardInner.classList.add('rotate-y-180');
+      }, 150);
+
+      document.getElementById('card-category-badge').innerText = event.tag;
+      document.getElementById('card-event-title').innerText = event.title;
+      document.getElementById('card-event-desc').innerText = event.description;
+      document.getElementById('card-hike-tag').innerText = event.increasePercent ? `+${event.increasePercent}%` : `+${formatBRL(event.appliedIncrease)}`;
+      document.getElementById('card-impact-value').innerText = `${gameEngine.categories[event.category].name.split(' ')[0]}: +${formatBRL(event.appliedIncrease)}`;
+
+      renderReadjustSliders();
+      checkReadjustBalance();
+
+      const advanceBtn = document.getElementById('advance-month-btn');
+      advanceBtn.disabled = false;
+      advanceBtn.className = "w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black rounded-2xl shadow-xl shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer text-sm animate-glow transform hover:scale-[1.02] active:scale-95";
+      advanceBtn.querySelector('span').innerText = gameEngine.currentMonth < gameEngine.totalMonths ? "Confirmar Orçamento e Avançar Mês" : "Gerar Veredito do Poder de Compra";
+    }
+
+    function renderReadjustSliders() {
+      const container = document.getElementById('readjust-sliders-wrapper');
+      container.innerHTML = '';
+
+      Object.keys(gameEngine.categories).forEach(k => {
+        const cat = gameEngine.categories[k];
+        const val = gameEngine.currentExpenses[k];
+        const baseVal = gameEngine.initialExpenses[k];
+        const diff = val - baseVal;
+
+        let diffBadge = '';
+        if (diff > 0) {
+          diffBadge = `<span class="text-[10px] bg-rose-500/20 text-rose-400 px-1.5 py-0.5 rounded font-bold">+${formatBRL(diff)}</span>`;
+        } else if (diff < 0) {
+          diffBadge = `<span class="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded font-bold">${formatBRL(diff)}</span>`;
+        }
+
+        const div = document.createElement('div');
+        div.className = "bg-slate-900/80 p-3 rounded-xl border border-slate-800 space-y-1.5";
+        div.innerHTML = `
+          <div class="flex items-center justify-between text-xs sm:text-sm">
+            <span class="font-bold text-slate-200 flex items-center gap-2">
+              <i data-lucide="${cat.icon}" class="w-4 h-4 text-emerald-400"></i>
+              ${cat.name} ${diffBadge}
+            </span>
+            <span id="readjust-txt-${k}" class="font-extrabold text-white">${formatBRL(val)}</span>
+          </div>
+          <input type="range" 
+                 min="0" 
+                 max="${Math.round(gameEngine.salary * 0.7)}" 
+                 step="10" 
+                 value="${val}" 
+                 oninput="handleReadjustChange('${k}', this.value)"
+                 class="w-full accent-emerald-500 h-2 bg-slate-800 rounded-lg cursor-pointer">
+        `;
+        container.appendChild(div);
+      });
+
+      lucide.createIcons();
+    }
+
+    function handleReadjustChange(key, val) {
+      gameEngine.adjustCurrentExpense(key, val);
+      document.getElementById(`readjust-txt-${key}`).innerText = formatBRL(gameEngine.currentExpenses[key]);
+      checkReadjustBalance();
+    }
+
+    function checkReadjustBalance() {
+      const monthSummary = gameEngine.getCurrentMonthSummary();
+
+      document.getElementById('sim-cost-display').innerText = formatBRL(monthSummary.totalCost);
+      document.getElementById('sim-balance-display').innerText = formatBRL(monthSummary.balance);
+
+      const statusBadge = document.getElementById('rebalance-status-badge');
+      const warningBox = document.getElementById('readjust-warning-alert');
+
+      if (monthSummary.isDeficit) {
+        statusBadge.className = "px-3 py-1 bg-rose-500/10 text-rose-400 border border-rose-500/30 rounded-lg text-xs font-bold";
+        statusBadge.innerText = "Déficit Mensal";
+        warningBox.classList.remove('hidden');
+      } else {
+        statusBadge.className = "px-3 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-bold";
+        statusBadge.innerText = "Orçamento em Dia";
+        warningBox.classList.add('hidden');
+      }
+    }
+
+    function handleAdvanceMonth() {
+      if (!gameEngine.hasDrawnCardThisMonth) return;
+
+      const advanceResult = gameEngine.advanceMonth();
+
+      if (advanceResult.finished) {
+        playAudioFx('win');
+        if (window.confetti) confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
+        renderFinalReport(advanceResult.report);
+      } else {
+        playAudioFx('click');
+        setupSimulationMonth();
+      }
+    }
+
+    function renderFinalReport(report) {
+      if (!report) report = gameEngine.generateFinalReport();
+
+      switchStepWithAnimation('step-3', 'step-4');
+      document.getElementById('hdr-step').innerText = "4. Veredito";
+
+      animateValue('final-loss-pct', 0, -report.percentagePowerLoss, 1000, false, '%');
+      document.getElementById('final-nominal-sal').innerText = formatBRL(report.nominalSalary);
+      animateValue('final-real-sal', report.nominalSalary, report.realSalaryEquivalent, 1000, true);
+
+      animateValue('final-cost-diff', 0, report.totalCostIncrease, 1000, true);
+      document.getElementById('final-m1-cost').innerText = formatBRL(report.firstMonthCost);
+      document.getElementById('final-m6-cost').innerText = formatBRL(report.finalMonthCost);
+
+      animateValue('final-reserve-val', 0, report.finalReserve, 1000, true);
+
+      document.getElementById('basket-food-1').innerText = `${report.basketComparison.basicFoodBaskets.before} cestas`;
+      document.getElementById('basket-food-2').innerText = `${report.basketComparison.basicFoodBaskets.after} cestas`;
+
+      document.getElementById('basket-trans-1').innerText = `${report.basketComparison.transitTickets.before} passagens`;
+      document.getElementById('basket-trans-2').innerText = `${report.basketComparison.transitTickets.after} passagens`;
+
+      document.getElementById('basket-leisure-1').innerText = `${report.basketComparison.leisureOutings.before} saídas`;
+      document.getElementById('basket-leisure-2').innerText = `${report.basketComparison.leisureOutings.after} saídas`;
+
+      initEvolutionLineChart(report.history);
+    }
+
+    function initEvolutionLineChart(historyData) {
+      if (!historyData) historyData = gameEngine.history;
+
+      const ctx = document.getElementById('evolutionChart').getContext('2d');
+      const labels = historyData.map(h => `Mês ${h.month}`);
+      const costData = historyData.map(h => h.totalCost);
+      const salaryData = historyData.map(h => h.salary);
+
+      if (lineChart) lineChart.destroy();
+
+      lineChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Custo Total Inflacionado (R$)',
+              data: costData,
+              borderColor: '#ef4444',
+              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+              fill: true,
+              tension: 0.3,
+              borderWidth: 3
+            },
+            {
+              label: 'Seu Salário Fixo (R$)',
+              data: salaryData,
+              borderColor: '#10b981',
+              borderDash: [5, 5],
+              borderWidth: 2,
+              fill: false
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: '#cbd5e1', font: { family: 'Plus Jakarta Sans' } } }
+          },
+          scales: {
+            x: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#94a3b8' } },
+            y: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#94a3b8' } }
+          }
+        }
+      });
+    }
+
+    function handleEngineStateChange(engine) {
+      // Notificação de alteração de estado da engine
+    }
+
+    function resetToStep(stepNum) {
+      playAudioFx('click');
+      gameEngine.reset(gameEngine.salary);
+
+      switchStepWithAnimation('step-4', 'step-1');
+      document.getElementById('step-3').classList.add('hidden');
+      document.getElementById('step-2').classList.add('hidden');
+
+      document.getElementById('header-tracker').classList.add('hidden');
+    }
+
+    function formatBRL(val) {
+      return new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+      }).format(val || 0);
+    }
+  </script>
+</body>
+</html>
